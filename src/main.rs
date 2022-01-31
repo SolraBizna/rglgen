@@ -1,10 +1,6 @@
 // Yikes!
 
-extern crate regex;
-#[macro_use]
-extern crate lazy_static;
-extern crate xml;
-extern crate getopts;
+use std::io::BufRead;
 
 mod dom;
 
@@ -99,7 +95,15 @@ fn main() {
         Some(opts) => opts,
     };
     let used_identifier_set = get_used_identifiers(&opts);
-    let xml = dom::read_xml(io::BufReader::new(fs::File::open(&opts.xml_path).unwrap()));
+    let mut file = io::BufReader::new(fs::File::open(&opts.xml_path).unwrap());
+    // skip a byte order mark if there is one
+    {
+        let top = file.fill_buf().unwrap();
+        if top.starts_with(b"\xEF\xBB\xBF") {
+            file.consume(3);
+        }
+    }
+    let xml = dom::read_xml(file);
     assert!(xml.get_name() == "registry");
     let (type_map, type_order) = gather_types(&xml, &opts);
     let (_group_map, _group_order) = gather_groups(&xml, &opts);

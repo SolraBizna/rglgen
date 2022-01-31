@@ -3,6 +3,7 @@ use std::{
     io::Write,
 };
 
+use lazy_static::lazy_static;
 use regex::bytes::{Regex, Captures};
 
 use crate::{
