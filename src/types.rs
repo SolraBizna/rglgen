@@ -12,7 +12,6 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Type {
-    requires: Vec<String>,
     code: Option<String>,
 }
 
@@ -331,7 +330,6 @@ type GLhandleARB = libc::c_uint;"#.to_vec());
         }
     }*/
     let mut result = Type {
-        requires: requires,
         code: unsafe { code.map(|x| String::from_utf8_unchecked(x)) },
     };
     if let Some(ref comment) = tag.get_attributes().get("comment") {

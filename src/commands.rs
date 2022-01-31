@@ -17,9 +17,7 @@ pub struct Command {
     params: String,
     ignored_params: String,
     param_names: String,
-    param_count: u32,
     param_types: HashSet<String>,
-    index: Option<u32>,
 }
 
 impl Command {
@@ -159,8 +157,7 @@ fn gather_command(tag: &Element, opts: &CmdLine,
         params: unsafe { String::from_utf8_unchecked(params) },
         ignored_params: unsafe { String::from_utf8_unchecked(ignored_params) },
         param_names: unsafe { String::from_utf8_unchecked(param_names) },
-        param_types, param_count,
-        index: None,
+        param_types,
     };
     map.insert(result.name.clone(), result);
 }
