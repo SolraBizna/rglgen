@@ -2,6 +2,7 @@
 name = "rglgen"
 version = "0.1.0"
 authors = ["Solra Bizna <solra@bizna.name>"]
+edition = "2021"
 
 [dependencies]
 xml-rs = "0.7"

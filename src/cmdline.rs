@@ -1,8 +1,11 @@
-use std::env::args;
-use std::path::PathBuf;
+use std::{
+    env::args,
+    path::PathBuf,
+};
+
 use getopts::Options;
 
-use versions::*;
+use crate::versions::*;
 
 pub struct CmdLine {
     pub version: ActiveVersion,

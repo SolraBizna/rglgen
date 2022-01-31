@@ -1,7 +1,12 @@
-use dom::{Node, Element};
-use std::collections::{HashMap, HashSet};
-use std::process::exit;
-use cmdline::CmdLine;
+use std::{
+    collections::{HashMap, HashSet},
+    process::exit,
+};
+
+use crate::{
+    dom::{Node, Element},
+    cmdline::CmdLine,
+};
 
 fn process_feature<'a>(tag: &'a Element, ext: &'a str,
                        handler: &fn(&mut HashMap<&'a str, &'a str>,

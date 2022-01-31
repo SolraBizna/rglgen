@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io, io::Write,
+};
 
-use std::io;
-use std::io::Write;
 use xml::reader::{EventReader, XmlEvent};
 
 #[derive(Debug)]

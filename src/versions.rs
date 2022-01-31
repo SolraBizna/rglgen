@@ -1,6 +1,8 @@
-use dom::Element;
-use regex::Regex;
 use std::fmt;
+
+use regex::Regex;
+
+use crate::dom::Element;
 
 #[derive(Debug)]
 pub struct ActiveVersion {

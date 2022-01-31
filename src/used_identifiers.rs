@@ -1,7 +1,10 @@
-use cmdline::CmdLine;
-use std::collections::HashSet;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::{
+    collections::HashSet,
+    fs::File,
+    io::{BufRead, BufReader},
+};
+
+use crate::cmdline::CmdLine;
 
 pub enum UsedIdentifiers {
     NotApplicable,

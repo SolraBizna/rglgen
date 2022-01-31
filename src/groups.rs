@@ -1,6 +1,9 @@
-use dom::{Node, Element};
 use std::collections::HashMap;
-use cmdline::CmdLine;
+
+use crate::{
+    dom::{Node, Element},
+    cmdline::CmdLine,
+};
 
 #[derive(Debug)]
 enum GroupType {

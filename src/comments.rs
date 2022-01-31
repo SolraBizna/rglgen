@@ -1,5 +1,6 @@
 use std::io;
-use dom::{Element, Node};
+
+use crate::dom::{Element, Node};
 
 fn gather_comment_elements<W: io::Write>(root: &Element, out: &mut W) {
     let gather_text = root.get_name() == "comment";

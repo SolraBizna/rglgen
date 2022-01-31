@@ -1,8 +1,14 @@
-use dom::{Node, Element};
-use std::collections::HashMap;
-use std::io::Write;
+use std::{
+    collections::HashMap,
+    io::Write,
+};
+
 use regex::bytes::{Regex, Captures};
-use cmdline::CmdLine;
+
+use crate::{
+    dom::{Node, Element},
+    cmdline::CmdLine,
+};
 
 #[derive(Debug)]
 pub struct Type {
@@ -101,7 +107,7 @@ fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
                 (&b"khronos_uint64_t"[..], &b"u64"[..]),
                 (&b"khronos_float_t"[..], &b"f32"[..]),
                 (&b"khronos_double_t"[..], &b"f64"[..]),
-            ].into_iter().map(|x| *x).collect();
+            ].into_iter().collect();
         static ref STATIC_TYPES_NO_LIBC: HashMap<&'static [u8], &'static [u8]>
             = [
                 (&b"void"[..], &b"()"[..]),
@@ -144,7 +150,7 @@ fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
                 (&b"khronos_uint64_t"[..], &b"u64"[..]),
                 (&b"khronos_float_t"[..], &b"f32"[..]),
                 (&b"khronos_double_t"[..], &b"f64"[..]),
-            ].into_iter().map(|x| *x).collect();
+            ].into_iter().collect();
     }
     let static_types =
         if opts.use_libc { &*STATIC_TYPES_LIBC }

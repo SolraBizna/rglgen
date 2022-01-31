@@ -1,8 +1,14 @@
-use dom::{Node, Element};
-use std::collections::{HashMap,HashSet};
+use std::{
+    collections::{HashMap,HashSet},
+    io::Write,
+};
+
 use regex::bytes::Regex;
-use std::io::Write;
-use cmdline::CmdLine;
+
+use crate::{
+    dom::{Node, Element},
+    cmdline::CmdLine,
+};
 
 #[derive(Debug)]
 pub struct Command {
