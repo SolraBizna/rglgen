@@ -201,35 +201,49 @@ impl fmt::Debug for Procs {
 
 "#);
     }
-print!("{}", r#"use std::mem::transmute;
-use std::mem::uninitialized;
+print!("{}", r#"use std::mem::{transmute, MaybeUninit};
 use std::ffi::CStr;
 "#);
     print!("{}", r#"impl Procs {
     pub fn new<E, F: Fn(&[u8])->Result<*const(),E>>(get_proc: F)
                  -> Result<Procs, E> {
-        let mut ret = Procs {
-            procs: unsafe { uninitialized() },
+"#);
+    // if you *really* want a GL binding with no GL entry points in it, I'm not
+    // gonna get in your way.
+    let mut need_getprocs = false;
+    print!("{}{}{}",
+           r#"        let mut procs: [MaybeUninit<*const()>; "#, sorted_commands.len(), r#"] = unsafe {
+            MaybeUninit::uninit().assume_init()
+        };
+"#);
+    // initialize the procs before we try calling glGetString (duh)
+    if let Some(&(start, stop)) = ext_proc_ranges.get("") {
+        need_getprocs = true;
+        print!("{}", r#"        Procs::getprocs(&get_proc, &mut procs[..], &[
+"#);
+        for i in start..stop {
+            print!("            b\"{}\\0\",\n", sorted_commands[i as usize]);
+        }
+        println!("{}", r#"        ])?;"#);
+    }
+    for ext in &opts.extensions {
+        if let Some(&(start, stop)) = ext_proc_ranges.get(ext.as_str()) {
+            for i in start..stop {
+                print!("        procs[{}].write({}_null_imp as *const ());\n",
+                       i, sorted_commands[i as usize]);
+            }
+        }
+    }
+    print!("{}", r#"        let procs = unsafe { transmute(procs) };
+        #[allow(unused_mut)] let mut ret = Procs {
+            procs,
 "#);
     for ext in &opts.extensions {
         println!("            has_{}: false,",
                  if ext.starts_with("GL_") { &ext[3..] }
                  else { &ext[..] });
     }
-    println!("{}", r#"        };"#);
-    // if you *really* want a GL binding with no GL entry points in it, I'm not
-    // gonna get in your way.
-    let mut need_getprocs = false;
-    // initialize the procs before we try calling glGetString (duh)
-    if let Some(&(start, stop)) = ext_proc_ranges.get("") {
-        need_getprocs = true;
-        print!("        Procs::getprocs(get_proc, &mut ret.procs[{}..{}], &[\n",
-               start, stop);
-        for i in start..stop {
-            print!("            b\"{}\\0\",\n", sorted_commands[i as usize]);
-        }
-        print!("        ])?;\n");
-    }
+    println!("{}","        };");
     if !opts.extensions.is_empty() {
         print!("{}",r#"        let extensions = unsafe {CStr::from_ptr(transmute(ret.GetString(GL_EXTENSIONS)))};
         let extensions = extensions.to_bytes();
@@ -254,22 +268,14 @@ use std::ffi::CStr;
                 else { &ext[..] };
             need_getprocs = true;
             print!(r#"        if ret.has_{} {{
-            Procs::getprocs(get_proc, &mut ret.procs[{}..{}], &["#,
-                   name_for_has, start, stop);
+            Procs::getprocs(&get_proc,
+                            unsafe {{ transmute(&mut ret.procs[{}..{}]) }}, &[
+"#, name_for_has, start, stop);
             for i in start..stop {
-                print!("                b\"{}\0\",\n",
+                print!("                b\"{}\\0\",\n",
                        sorted_commands[i as usize]);
             }
             print!(r#"            ])?;
-        }}
-        else {{
-            ret.procs[{}..{}].copy_from_slice(&[
-"#, start, stop);
-            for i in start..stop {
-                print!("                {}_null_imp as *const (),\n",
-                       sorted_commands[i as usize]);
-            }
-            print!(r#"            ]);
         }}
 "#);
         }
@@ -279,10 +285,10 @@ use std::ffi::CStr;
     }
 "#);
     if need_getprocs {
-        print!("{}",r#"    fn getprocs<E, F: Fn(&[u8])->Result<*const(),E>>(get_proc: F, range: &mut[*const ()], names: &[&[u8]]) -> Result<(), E> {
+        print!("{}",r#"    fn getprocs<E, F: Fn(&[u8])->Result<*const(),E>>(get_proc: &F, range: &mut[MaybeUninit<*const ()>], names: &[&[u8]]) -> Result<(), E> {
         debug_assert_eq!(range.len(), names.len());
         for i in 0..range.len() {
-            range[i] = unsafe {transmute(get_proc(names[i])?)};
+            range[i].write(unsafe {transmute(get_proc(names[i])?)});
         }
         Ok(())
     }
