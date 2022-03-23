@@ -293,8 +293,11 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
                 }
             }
         }
-        vec.write_all(b") -> ").unwrap();
-        vec.write_all(&return_type).unwrap();
+        vec.write_all(b")").unwrap();
+        if return_type != b"libc::c_void" {
+            vec.write_all(b" -> ").unwrap();
+            vec.write_all(&return_type).unwrap();
+        }
         vec.write_all(b">;").unwrap();
         code = Some(vec);
     }

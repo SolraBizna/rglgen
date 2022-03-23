@@ -29,7 +29,12 @@ impl Command {
         }
     }
     pub fn output_imp(&self, _opts: &CmdLine, procid: u32) {
-        println!(r#"    #[inline(always)] pub unsafe fn {}(&self, {}) -> {} {{ (transmute::<_, extern "C" fn({}) -> {}>(self.procs[{}]))({}) }}"#, if self.name.starts_with("gl") { &(&self.name)[2..] } else { &(&self.name)[..] }, self.params, self.returns, self.params, self.returns, procid, self.param_names);
+        if self.returns == "libc::c_void" {
+            println!(r#"    #[inline(always)] pub unsafe fn {}(&self, {}) {{ (transmute::<_, extern "C" fn({})>(self.procs[{}]))({}) }}"#, if self.name.starts_with("gl") { &(&self.name)[2..] } else { &(&self.name)[..] }, self.params, self.params, procid, self.param_names);
+        }
+        else {
+            println!(r#"    #[inline(always)] pub unsafe fn {}(&self, {}) -> {} {{ (transmute::<_, extern "C" fn({}) -> {}>(self.procs[{}]))({}) }}"#, if self.name.starts_with("gl") { &(&self.name)[2..] } else { &(&self.name)[..] }, self.params, self.returns, self.params, self.returns, procid, self.param_names);
+        }
     }
     pub fn output_dummy_imp(&self, ext: &str, _opts: &CmdLine) {
         println!(r#"extern "C" fn {}_null_imp({}) -> {} {{ missing_ext_panic("{}", "{}"); }}"#, self.name, self.ignored_params, self.returns, self.name, ext);
