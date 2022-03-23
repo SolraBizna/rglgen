@@ -276,7 +276,12 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
                 if let Some(caps) = NAME_AND_TYPE_EXTRACTOR.captures(param) {
                     let param_type = c_type_to_rust_type(map, &caps[1],
                                                          &mut requires, opts);
-                    vec.write_all(&caps[2]).unwrap();
+                    let param_name: &[u8] = match &caps[2] {
+                        b"type" => b"r#type",
+                        b"ref" => b"r#ref",
+                        x => x,
+                    };
+                    vec.write_all(param_name).unwrap();
                     vec.write_all(b": ").unwrap();
                     vec.write_all(&param_type[..]).unwrap();
                 }

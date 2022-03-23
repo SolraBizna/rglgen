@@ -125,8 +125,8 @@ fn gather_command(tag: &Element, opts: &CmdLine,
                         .unwrap();
                     let pname = &caps[2];
                     let pname: &[u8] = match pname {
-                        b"type" => b"p_type",
-                        b"ref" => b"p_ref",
+                        b"type" => b"r#type",
+                        b"ref" => b"r#ref",
                         x => x,
                     };
                     let mut ptype = caps[1].to_owned();
