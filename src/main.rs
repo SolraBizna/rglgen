@@ -166,7 +166,7 @@ print!("
     println!("    procs: [*const (); {}],", sorted_commands.len());
     
     for ext in &opts.extensions {
-        println!("    has_{}: bool,",
+        println!("    pub has_{}: bool,",
                  if ext.starts_with("GL_") { &ext[3..] }
                  else { &ext[..] });
     }
