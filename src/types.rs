@@ -263,7 +263,7 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
         let mut vec = Vec::new();
         vec.write_all(b"pub type ").unwrap();
         vec.write_all(new_type.as_slice()).unwrap();
-        vec.write_all(b" = fn(").unwrap();
+        vec.write_all(b" = Option<extern \"C\" fn(").unwrap();
         let mut first_param = true;
         if result[3] != b"void"[..] {
             for param in result[3].split(|x| *x == b',') {
@@ -295,7 +295,7 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
         }
         vec.write_all(b") -> ").unwrap();
         vec.write_all(&return_type).unwrap();
-        vec.write_all(b";").unwrap();
+        vec.write_all(b">;").unwrap();
         code = Some(vec);
     }
     else if name == "GLhandleARB" {
