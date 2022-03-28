@@ -219,8 +219,8 @@ use std::ffi::CStr;
     // initialize the procs before we try calling glGetString (duh)
     if let Some(&(start, stop)) = ext_proc_ranges.get("") {
         need_getprocs = true;
-        print!("{}", r#"        Procs::getprocs(&get_proc, &mut procs[..], &[
-"#);
+        print!(r#"        Procs::getprocs(&get_proc, &mut procs[{}..{}], &[
+"#, start, stop);
         for i in start..stop {
             print!("            b\"{}\\0\",\n", sorted_commands[i as usize]);
         }
@@ -245,11 +245,23 @@ use std::ffi::CStr;
     }
     println!("{}","        };");
     if !opts.extensions.is_empty() {
-        print!("{}",r#"        let extensions = unsafe {CStr::from_ptr(transmute(ret.GetString(GL_EXTENSIONS)))};
+        if opts.version.needs_getstringi_extensions() {
+            // both OpenGL and OpenGL ES switched to this method in version 3.0
+            // and deprecated the previous one
+            print!("{}",r#"        let mut num_extensions = 0;
+        unsafe { ret.GetIntegerv(GL_NUM_EXTENSIONS, &mut num_extensions) };
+        for i in 0 .. num_extensions as GLuint {
+            let ext = unsafe {CStr::from_ptr(transmute(ret.GetStringi(GL_EXTENSIONS, i)))}.to_bytes();
+            match ext {
+"#);
+        }
+        else {
+            print!("{}",r#"        let extensions = unsafe {CStr::from_ptr(transmute(ret.GetString(GL_EXTENSIONS)))};
         let extensions = extensions.to_bytes();
         for ext in extensions.split(|x| *x == b' ') {
             match ext {
 "#);
+        }
         for ext in &opts.extensions {
             println!(r#"                b"{}" => ret.has_{} = true,"#,
                      ext,

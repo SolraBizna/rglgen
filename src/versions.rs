@@ -54,6 +54,9 @@ impl ActiveVersion {
             _ => false,
         }
     }
+    pub fn needs_getstringi_extensions(&self) -> bool {
+        !(self.number.starts_with("1.") || self.number.starts_with("2."))
+    }
 }
 
 pub fn parse_version(src: &str) -> Result<ActiveVersion,&str> {
