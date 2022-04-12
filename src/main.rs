@@ -245,6 +245,12 @@ use std::ffi::CStr;
     }
     println!("{}","        };");
     if !opts.extensions.is_empty() {
+        print!("{}",r#"        let disabled_extensions = std::env::var("GL_DISABLED_EXTENSIONS");
+        let disabled_extensions = disabled_extensions.as_ref()
+            .map(|x| x.as_bytes()).unwrap_or(b"");
+        let disabled_extensions
+            = build_disabled_extension_list(disabled_extensions);
+"#);
         if opts.version.needs_getstringi_extensions() {
             // both OpenGL and OpenGL ES switched to this method in version 3.0
             // and deprecated the previous one
@@ -252,16 +258,17 @@ use std::ffi::CStr;
         unsafe { ret.GetIntegerv(GL_NUM_EXTENSIONS, &mut num_extensions) };
         for i in 0 .. num_extensions as GLuint {
             let ext = unsafe {CStr::from_ptr(transmute(ret.GetStringi(GL_EXTENSIONS, i)))}.to_bytes();
-            match ext {
 "#);
         }
         else {
             print!("{}",r#"        let extensions = unsafe {CStr::from_ptr(transmute(ret.GetString(GL_EXTENSIONS)))};
         let extensions = extensions.to_bytes();
         for ext in extensions.split(|x| *x == b' ') {
-            match ext {
 "#);
         }
+        print!("{}",r#"            if disabled_extensions.contains(ext) { continue }
+            match ext {
+"#);
         for ext in &opts.extensions {
             println!(r#"                b"{}" => ret.has_{} = true,"#,
                      ext,
@@ -314,4 +321,22 @@ use std::ffi::CStr;
         }
     }
     println!("{}","}");
+    if !opts.extensions.is_empty() {
+        print!("{}",r#"
+fn build_disabled_extension_list(disabled_extensions: &[u8])
+            -> std::collections::HashSet<&[u8]> {
+    disabled_extensions.split(|&x| {
+        !((x >= b'0' && x <= b'9')
+          || (x >= b'A' && x <= b'Z')
+          || (x >= b'a' && x <= b'z')
+          || (x == b'_'))
+    }).filter_map(|x| {
+        match x {
+            b"" => None,
+            x => Some(x)
+        }
+    }).collect()
+}
+"#);
+    }
 }
