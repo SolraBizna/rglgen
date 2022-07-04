@@ -118,20 +118,20 @@ fn main() {
     }
     print!(r"#![allow(dead_code,non_snake_case,non_upper_case_globals,unused_imports)]
 
-/// This module was generated using the rglgen crate.
-/// It is a {}binding for {}.
+//! This module was generated using the rglgen crate.
+//! It is a {}binding for {}.
 ", match opts.used_identifiers_path { Some(_) => "partial ", _ => ""},
            opts.version);
     if !opts.extensions.is_empty() {
         print!(r"///
-/// It includes support for the following extensions:
+//! It includes support for the following extensions:
 ");
         for ext in &opts.extensions {
-            print!("/// - {}\n", ext);
+            print!("//! - {}\n", ext);
         }
     }
     else {
-        print!(r"/// It does not support any extensions.
+        print!(r"//! It does not support any extensions.
 ");
     }
 print!("
