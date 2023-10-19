@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    dom::{Node, Element},
     cmdline::CmdLine,
+    dom::{Element, Node},
 };
 
 pub enum Val {
@@ -14,12 +14,9 @@ pub enum Val {
 impl Val {
     pub fn output(&self, name: &str, _opts: &CmdLine) {
         match *self {
-            Val::U32(x) =>
-                println!("pub const {}: u32 = 0x{:x};", name, x),
-            Val::I32(x) =>
-                println!("pub const {}: i32 = {};", name, x),
-            Val::U64(x) =>
-                println!("pub const {}: u64 = 0x{:x};", name, x),
+            Val::U32(x) => println!("pub const {}: u32 = 0x{:x};", name, x),
+            Val::I32(x) => println!("pub const {}: i32 = {};", name, x),
+            Val::U64(x) => println!("pub const {}: u64 = 0x{:x};", name, x),
         }
     }
 }
@@ -27,60 +24,61 @@ impl Val {
 fn parse_value(str: &str, typ: Option<&str>) -> Val {
     match typ {
         None => {
-            if str.starts_with("-") {
+            if str.starts_with('-') {
                 Val::I32(str.parse().unwrap())
-            }
-            else {
+            } else {
                 parse_value(str, Some("u"))
             }
-        },
-        Some("u") => {
-            Val::U32(if str.starts_with("0x") {
-                u32::from_str_radix(&str[2..], 16).unwrap()
-            }
-            else {
-                str.parse().unwrap()
-            })
-        },
-        Some("ull") => {
-            Val::U64(if str.starts_with("0x") {
-                u64::from_str_radix(&str[2..], 16).unwrap()
-            }
-            else {
-                str.parse().unwrap()
-            })
-        },
+        }
+        Some("u") => Val::U32(if let Some(hexa) = str.strip_prefix("0x") {
+            u32::from_str_radix(hexa, 16).unwrap()
+        } else {
+            str.parse().unwrap()
+        }),
+        Some("ull") => Val::U64(if let Some(hexa) = str.strip_prefix("0x") {
+            u64::from_str_radix(hexa, 16).unwrap()
+        } else {
+            str.parse().unwrap()
+        }),
         Some(x) => {
             panic!("unknown <enum type=\"{}\">", x);
-        },
+        }
     }
 }
 
-pub fn gather_values(root: &Element, _opts: &CmdLine)
-                     -> (HashMap<String,Val>,Vec<String>) {
+pub fn gather_values(
+    root: &Element,
+    _opts: &CmdLine,
+) -> (HashMap<String, Val>, Vec<String>) {
     let mut map = HashMap::new();
     for child in root.get_children() {
-        match child {
-            &Node::Element(ref element) => {
-                if element.get_name() == "enums" {
-                    for child in element.get_children() {
-                        match child {
-                            &Node::Element(ref element) =>
-                                if element.get_name() == "enum" {
-                                    if element.get_attributes().contains_key("alias") {
-                                        // ignore!
-                                    }
-                                    else if let Some(ref enum_name) = element.get_attributes().get("name") {
-                                        assert!(!map.contains_key(enum_name.as_str()));
-                                        map.insert((*enum_name).clone(), parse_value(element.get_attributes()["value"].as_str(), element.get_attributes().get("type").map(|x| x.as_str())));
-                                    }
-                                },
-                            _ => (),
+        if let Node::Element(ref element) = child {
+            if element.get_name() == "enums" {
+                for child in element.get_children() {
+                    if let Node::Element(ref element) = child {
+                        if element.get_name() == "enum" {
+                            if element.get_attributes().contains_key("alias") {
+                                // ignore!
+                            } else if let Some(enum_name) =
+                                element.get_attributes().get("name")
+                            {
+                                assert!(!map.contains_key(enum_name.as_str()));
+                                map.insert(
+                                    (*enum_name).clone(),
+                                    parse_value(
+                                        element.get_attributes()["value"]
+                                            .as_str(),
+                                        element
+                                            .get_attributes()
+                                            .get("type")
+                                            .map(|x| x.as_str()),
+                                    ),
+                                );
+                            }
                         }
                     }
                 }
-            },
-            _ => (),
+            }
         }
     }
     let mut order = Vec::new();
@@ -88,6 +86,5 @@ pub fn gather_values(root: &Element, _opts: &CmdLine)
         order.push((*key).clone());
     }
     order.sort();
-    (map,order)
+    (map, order)
 }
-

@@ -7,10 +7,10 @@ use crate::dom::Element;
 
 #[derive(Debug)]
 pub struct ActiveVersion {
-    api: String, // gl, gles1, gles2
-    profile: String, // core/compatibility (gl), blank (gles)
+    api: String,             // gl, gles1, gles2
+    profile: String,         // core/compatibility (gl), blank (gles)
     extension_space: String, // gl, glcore, gles1, gles2
-    number: String, // 1.0, 3.2, etc.
+    number: String,          // 1.0, 3.2, etc.
 }
 
 impl fmt::Display for ActiveVersion {
@@ -46,11 +46,13 @@ impl ActiveVersion {
     pub fn supported(&self, el: &Element) -> bool {
         match el.get_attributes().get("supported") {
             Some(supp) => {
-                for sub in supp.split("|") {
-                    if sub == self.api { return true }
+                for sub in supp.split('|') {
+                    if sub == self.api {
+                        return true;
+                    }
                 }
                 false
-            },
+            }
             _ => false,
         }
     }
@@ -59,38 +61,34 @@ impl ActiveVersion {
     }
 }
 
-pub fn parse_version(src: &str) -> Result<ActiveVersion,&str> {
+pub fn parse_version(src: &str) -> Result<ActiveVersion, &str> {
     let (api, profile, extension_space, number);
     if src.starts_with("gles1") {
         api = "gles1";
         profile = "";
         extension_space = "gles1";
         number = &src[4..]; // include the 1 in the number
-    }
-    else if src.starts_with("gles") {
+    } else if let Some(x) = src.strip_prefix("gles") {
         api = "gles2";
         profile = "";
         extension_space = "gles2";
-        number = &src[4..]; // include the 2 in the number
-    }
-    else if src.starts_with("glcore") {
+        number = x; // include the 2 in the number
+    } else if let Some(x) = src.strip_prefix("glcore") {
         api = "gl";
         profile = "core";
         extension_space = "glcore";
-        number = &src[6..];
-    }
-    else if src.starts_with("gl") {
+        number = x;
+    } else if let Some(x) = src.strip_prefix("gl") {
         api = "gl";
         profile = "compatibility";
         extension_space = "gl";
-        number = &src[2..];
-    }
-    else {
+        number = x;
+    } else {
         return Err("must start with gl, glcore, or gles");
     }
     lazy_static! {
-        static ref VALID_VERSION: Regex = Regex::new(r"^[0-9]\.[0-9]$")
-            .unwrap();
+        static ref VALID_VERSION: Regex =
+            Regex::new(r"^[0-9]\.[0-9]$").unwrap();
     }
     if !VALID_VERSION.is_match(number) {
         return Err("must end with a valid version number (X.Y)");
@@ -99,7 +97,6 @@ pub fn parse_version(src: &str) -> Result<ActiveVersion,&str> {
         api: api.to_owned(),
         profile: profile.to_owned(),
         extension_space: extension_space.to_owned(),
-        number: number.to_owned()
+        number: number.to_owned(),
     })
 }
-

@@ -1,7 +1,4 @@
-use std::{
-    env::args,
-    path::PathBuf,
-};
+use std::{env::args, path::PathBuf};
 
 use getopts::Options;
 
@@ -16,9 +13,11 @@ pub struct CmdLine {
 }
 
 fn print_usage(program: &str, opts: &Options) {
-    let brief = format!("Usage: {} [options] path/to/gl.xml extensions... \
+    let brief = format!(
+        "Usage: {} [options] path/to/gl.xml extensions... \
                          >.../gl.rs",
-                        program);
+        program
+    );
     eprint!("{}", opts.usage(&brief));
 }
 
@@ -31,7 +30,7 @@ pub fn parse_cmdline() -> Option<CmdLine> {
     opts.optflag("C", "without-libc", "disable the use of the `libc` crate for correctly matching GL types (dangerous!)");
     if argv.len() < 2 {
         print_usage(program, &opts);
-        return None
+        return None;
     }
     let matches = match opts.parse(&argv[1..]) {
         Ok(matches) => matches,
@@ -40,23 +39,22 @@ pub fn parse_cmdline() -> Option<CmdLine> {
     if matches.free.is_empty() {
         eprintln!("No gl.xml path specified");
         print_usage(program, &opts);
-        return None
+        return None;
     }
-    let ret = CmdLine{
-        version: match parse_version(matches.opt_str("t").as_ref().map(|x| x.as_str()).unwrap_or("gles2.0")) {
+    let ret = CmdLine {
+        version: match parse_version(
+            matches.opt_str("t").as_deref().unwrap_or("gles2.0"),
+        ) {
             Err(wat) => {
                 eprintln!("Invalid glversion: {}", wat);
-                return None
-            },
+                return None;
+            }
             Ok(version) => version,
         },
         xml_path: PathBuf::from(&matches.free[0]),
-        extensions: matches.free[1..].into_iter().map(|x| x.clone()).collect(),
+        extensions: matches.free[1..].to_vec(),
         use_libc: !matches.opt_present("C"),
-        used_identifiers_path: match matches.opt_str("u") {
-            Some(path) => Some(PathBuf::from(path)),
-            None => None,
-        },
+        used_identifiers_path: matches.opt_str("u").map(PathBuf::from),
     };
     Some(ret)
 }

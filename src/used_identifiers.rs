@@ -14,8 +14,8 @@ pub enum UsedIdentifiers {
 impl UsedIdentifiers {
     pub fn contains(&self, key: &str) -> bool {
         match self {
-            &UsedIdentifiers::NotApplicable => true,
-            &UsedIdentifiers::Applicable(ref set) => set.contains(key),
+            UsedIdentifiers::NotApplicable => true,
+            UsedIdentifiers::Applicable(set) => set.contains(key),
         }
     }
 }
@@ -29,13 +29,13 @@ pub fn get_used_identifiers(opts: &CmdLine) -> UsedIdentifiers {
             for line in file.lines() {
                 let mut line = line.unwrap();
                 // thanks, DOS!
-                if line.ends_with("\r") {
+                if line.ends_with('\r') {
                     let llen = line.len();
-                    line.truncate(llen-1);
+                    line.truncate(llen - 1);
                 }
                 set.insert(line);
             }
             UsedIdentifiers::Applicable(set)
-        },
+        }
     }
 }

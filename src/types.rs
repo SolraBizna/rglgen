@@ -1,14 +1,11 @@
-use std::{
-    collections::HashMap,
-    io::Write,
-};
+use std::{collections::HashMap, io::Write};
 
 use lazy_static::lazy_static;
-use regex::bytes::{Regex, Captures};
+use regex::bytes::{Captures, Regex};
 
 use crate::{
-    dom::{Node, Element},
     cmdline::CmdLine,
+    dom::{Element, Node},
 };
 
 #[derive(Debug)]
@@ -24,8 +21,11 @@ impl Type {
     }
 }
 
-fn gather_text_content_and_search_for_name<W: Write>
-    (root: &Element, type_name: &mut Option<String>, out: &mut W) {
+fn gather_text_content_and_search_for_name<W: Write>(
+    root: &Element,
+    type_name: &mut Option<String>,
+    out: &mut W,
+) {
     if root.get_name() == "name" {
         match *type_name {
             None => *type_name = Some(root.get_text()),
@@ -34,24 +34,32 @@ fn gather_text_content_and_search_for_name<W: Write>
     }
     for child in root.get_children() {
         match child {
-            &Node::Text(ref text) => {
-                out.write(text.as_bytes()).unwrap();
-            },
-            &Node::Element(ref element) => {
-                gather_text_content_and_search_for_name(element,type_name,out);
-            },
+            Node::Text(ref text) => {
+                out.write_all(text.as_bytes()).unwrap();
+            }
+            Node::Element(ref element) => {
+                gather_text_content_and_search_for_name(
+                    element, type_name, out,
+                );
+            }
         }
     }
 }
 
 fn space_to_underscore(x: &u8) -> u8 {
-    if *x == b' ' { b'_' } else { *x }
+    if *x == b' ' {
+        b'_'
+    } else {
+        *x
+    }
 }
 
-fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
-                       c_type: &[u8],
-                       requires: &mut Vec<String>,
-                       opts: &CmdLine) -> Vec<u8> {
+fn c_type_to_rust_type(
+    map: &mut HashMap<String, Type>,
+    c_type: &[u8],
+    requires: &mut Vec<String>,
+    opts: &CmdLine,
+) -> Vec<u8> {
     lazy_static! {
         static ref CONDENSE_SPACES_1: Regex
             = Regex::new(r#"^ +"#).unwrap();
@@ -152,18 +160,23 @@ fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
                 (&b"khronos_double_t"[..], &b"f64"[..]),
             ].into_iter().collect();
     }
-    let static_types =
-        if opts.use_libc { &*STATIC_TYPES_LIBC }
-        else { &*STATIC_TYPES_NO_LIBC };
-    let temp = CONDENSE_SPACES_1
-        .replace_all(&c_type, |_caps:&Captures| Vec::new());
+    let static_types = if opts.use_libc {
+        &*STATIC_TYPES_LIBC
+    } else {
+        &*STATIC_TYPES_NO_LIBC
+    };
+    let temp =
+        CONDENSE_SPACES_1.replace_all(c_type, |_caps: &Captures| Vec::new());
     let temp = CONDENSE_SPACES_2
-        .replace_all(&temp, |caps:&Captures| caps[1].to_vec());
-    let temp = STRUCT_MUNCHER
-        .replace_all(&temp, |_caps:&Captures| b"void".to_vec());
+        .replace_all(&temp, |caps: &Captures| caps[1].to_vec());
+    let temp =
+        STRUCT_MUNCHER.replace_all(&temp, |_caps: &Captures| b"void".to_vec());
     let caps = POINTER_MUNCHER.captures(&temp).unwrap();
-    let point = if !caps[1].is_empty() { &b"*const"[..] }
-    else { &b"*mut"[..] };
+    let point = if !caps[1].is_empty() {
+        &b"*const"[..]
+    } else {
+        &b"*mut"[..]
+    };
     let num_pointers = caps[3].len();
     let mut ret = Vec::new();
     for _ in 0..num_pointers {
@@ -175,11 +188,9 @@ fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
             ret.push(b' ');
         }
         ret.write_all(result).unwrap();
-    }
-    else {
-        let old_type_as_string = String::from_utf8(old_type.to_vec())
-            .unwrap();
-        if let Some(_) = map.get(&old_type_as_string) {
+    } else {
+        let old_type_as_string = String::from_utf8(old_type.to_vec()).unwrap();
+        if map.contains_key(&old_type_as_string) {
             if !requires.contains(&old_type_as_string) {
                 requires.push(old_type_as_string);
             }
@@ -187,17 +198,21 @@ fn c_type_to_rust_type(map: &mut HashMap<String, Type>,
                 ret.push(b' ');
             }
             ret.write_all(old_type).unwrap();
-        }
-        else {
-            panic!("Can't find the Rust equivalent to: {}",
-                   unsafe { String::from_utf8_unchecked(old_type.to_vec()) });
+        } else {
+            panic!("Can't find the Rust equivalent to: {}", unsafe {
+                String::from_utf8_unchecked(old_type.to_vec())
+            });
         }
     }
     ret.to_vec()
 }
 
-fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
-               order: &mut Vec<String>, opts: &CmdLine) {
+fn gather_type(
+    tag: &Element,
+    map: &mut HashMap<String, Type>,
+    order: &mut Vec<String>,
+    opts: &CmdLine,
+) {
     let mut name: Option<String> = tag.get_attributes().get("name").cloned();
     let mut text = Vec::new();
     let mut requires = Vec::new();
@@ -206,7 +221,9 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
     }
     gather_text_content_and_search_for_name(tag, &mut name, &mut text);
     let name = match name {
-        None => panic!("nameless type! text is:\n{}", unsafe { String::from_utf8_unchecked(text) }),
+        None => panic!("nameless type! text is:\n{}", unsafe {
+            String::from_utf8_unchecked(text)
+        }),
         Some(name) => name,
     };
     let code;
@@ -225,12 +242,14 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
     let text = text.as_slice();
     if let Some(result) = SIMPLE_TYPEDEF.captures(text) {
         if result[2] != *name.as_bytes() {
-            panic!("{}'s name isn't its name!? ({})", name,
-                   unsafe { String::from_utf8_unchecked(result[2].to_vec()) });
+            panic!("{}'s name isn't its name!? ({})", name, unsafe {
+                String::from_utf8_unchecked(result[2].to_vec())
+            });
         }
-        let new_type: Vec<u8> = result[2].into_iter().map(space_to_underscore)
-            .collect();
-        let underlying_type = c_type_to_rust_type(map, &result[1], &mut requires, opts);
+        let new_type: Vec<u8> =
+            result[2].iter().map(space_to_underscore).collect();
+        let underlying_type =
+            c_type_to_rust_type(map, &result[1], &mut requires, opts);
         let mut vec = Vec::new();
         vec.write_all(b"pub type ").unwrap();
         vec.write_all(new_type.as_slice()).unwrap();
@@ -238,28 +257,29 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
         vec.write_all(&underlying_type).unwrap();
         vec.write_all(b";").unwrap();
         code = Some(vec);
-    }
-    else if let Some(result) = OPAQUE_STRUCT.captures(text) {
+    } else if let Some(result) = OPAQUE_STRUCT.captures(text) {
         if result[1] != *name.as_bytes() {
-            panic!("{}'s name isn't its name!? ({})", name,
-                   unsafe { String::from_utf8_unchecked(result[1].to_vec()) });
+            panic!("{}'s name isn't its name!? ({})", name, unsafe {
+                String::from_utf8_unchecked(result[1].to_vec())
+            });
         }
-        let new_type: Vec<u8> = result[1].into_iter().map(space_to_underscore)
-            .collect();
+        let new_type: Vec<u8> =
+            result[1].iter().map(space_to_underscore).collect();
         let mut vec = Vec::new();
         vec.write_all(b"type ").unwrap();
         vec.write_all(new_type.as_slice()).unwrap();
         vec.write_all(b" = ();").unwrap();
         code = Some(vec);
-    }
-    else if let Some(result) = FUNCTION_POINTER.captures(text) {
+    } else if let Some(result) = FUNCTION_POINTER.captures(text) {
         if result[2] != *name.as_bytes() {
-            panic!("{}'s name isn't its name!? ({})", name,
-                   unsafe { String::from_utf8_unchecked(result[2].to_vec()) });
+            panic!("{}'s name isn't its name!? ({})", name, unsafe {
+                String::from_utf8_unchecked(result[2].to_vec())
+            });
         }
-        let new_type: Vec<u8> = result[2].into_iter().map(space_to_underscore)
-            .collect();
-        let return_type = c_type_to_rust_type(map, &result[1], &mut requires, opts);
+        let new_type: Vec<u8> =
+            result[2].iter().map(space_to_underscore).collect();
+        let return_type =
+            c_type_to_rust_type(map, &result[1], &mut requires, opts);
         let mut vec = Vec::new();
         vec.write_all(b"pub type ").unwrap();
         vec.write_all(new_type.as_slice()).unwrap();
@@ -269,13 +289,16 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
             for param in result[3].split(|x| *x == b',') {
                 if first_param {
                     first_param = false;
-                }
-                else {
+                } else {
                     vec.write_all(b", ").unwrap();
                 }
                 if let Some(caps) = NAME_AND_TYPE_EXTRACTOR.captures(param) {
-                    let param_type = c_type_to_rust_type(map, &caps[1],
-                                                         &mut requires, opts);
+                    let param_type = c_type_to_rust_type(
+                        map,
+                        &caps[1],
+                        &mut requires,
+                        opts,
+                    );
                     let param_name: &[u8] = match &caps[2] {
                         b"type" => b"r#type",
                         b"ref" => b"r#ref",
@@ -284,10 +307,9 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
                     vec.write_all(param_name).unwrap();
                     vec.write_all(b": ").unwrap();
                     vec.write_all(&param_type[..]).unwrap();
-                }
-                else {
-                    let param_type=c_type_to_rust_type(map, &param,
-                                                       &mut requires, opts);
+                } else {
+                    let param_type =
+                        c_type_to_rust_type(map, param, &mut requires, opts);
                     vec.write_all(b"_: ").unwrap();
                     vec.write_all(&param_type[..]).unwrap();
                 }
@@ -300,13 +322,15 @@ fn gather_type(tag: &Element, map: &mut HashMap<String,Type>,
         }
         vec.write_all(b">;").unwrap();
         code = Some(vec);
-    }
-    else if name == "GLhandleARB" {
-        assert_eq!(text, &br#"#ifdef __APPLE__
+    } else if name == "GLhandleARB" {
+        assert_eq!(
+            text,
+            &br#"#ifdef __APPLE__
 typedef void *GLhandleARB;
 #else
 typedef unsigned int GLhandleARB;
-#endif"#[..]);
+#endif"#[..]
+        );
         code = Some(br#"// For historical reasons, this definition differs between macOS and other
 // platforms. When the extension was promoted to core in GL 2.0, the definition
 // was tightened. It's best to use the core versions of the routines that need
@@ -315,14 +339,12 @@ typedef unsigned int GLhandleARB;
 type GLhandleARB = *mut();
 #[cfg(target_os != "macos")]
 type GLhandleARB = libc::c_uint;"#.to_vec());
-    }
-    else if name == "stddef" || name == "khrplatform" || name == "inttypes" {
+    } else if name == "stddef" || name == "khrplatform" || name == "inttypes" {
         // These are "dependencies GL types require to be declared legally".
         // They mainly consist of preprocessor directives. We don't make any
         // use of them.
         code = None;
-    }
-    else {
+    } else {
         eprintln!("!!!!!!!!!!!!!!!!!!!!!!");
         eprintln!("! TYPE PARSE FAILURE !");
         eprintln!("!!!!!!!!!!!!!!!!!!!!!!");
@@ -341,7 +363,7 @@ type GLhandleARB = libc::c_uint;"#.to_vec());
     let mut result = Type {
         code: unsafe { code.map(|x| String::from_utf8_unchecked(x)) },
     };
-    if let Some(ref comment) = tag.get_attributes().get("comment") {
+    if let Some(comment) = tag.get_attributes().get("comment") {
         let mut new_code = Vec::new();
         for line in comment.as_bytes().split(|x| *x == b'\n') {
             new_code.write_all(b"// ").unwrap();
@@ -359,28 +381,26 @@ type GLhandleARB = libc::c_uint;"#.to_vec());
     map.insert(name, result);
 }
 
-pub fn gather_types(root: &Element, opts: &CmdLine)
-                    -> (HashMap<String,Type>,Vec<String>) {
+pub fn gather_types(
+    root: &Element,
+    opts: &CmdLine,
+) -> (HashMap<String, Type>, Vec<String>) {
     let mut map = HashMap::new();
     let mut order = Vec::new();
     for child in root.get_children() {
-        match child {
-            &Node::Element(ref element) => {
-                if element.get_name() == "types" {
-                    for child in element.get_children() {
-                        match child {
-                            &Node::Element(ref element) =>
-                                if element.get_name() == "type"
-                                && opts.version.correct_api(element) {
-                                    gather_type(element, &mut map, &mut order, opts)
-                                },
-                            _ => (),
+        if let Node::Element(ref element) = child {
+            if element.get_name() == "types" {
+                for child in element.get_children() {
+                    if let Node::Element(ref element) = child {
+                        if element.get_name() == "type"
+                            && opts.version.correct_api(element)
+                        {
+                            gather_type(element, &mut map, &mut order, opts)
                         }
                     }
                 }
-            },
-            _ => (),
+            }
         }
     }
-    (map,order)
+    (map, order)
 }
