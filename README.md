@@ -73,6 +73,6 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 Output of rglgen is explicitly exempted from being under any particular license. The license of [`gl.xml`][2] may be relevant.
 
-[1] https://wiki.libsdl.org/SDL2/SDL_GL_GetProcAddress
-[2] https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/main/xml/gl.xml
-[3] https://docs.gl/
+[1]: https://wiki.libsdl.org/SDL2/SDL_GL_GetProcAddress
+[2]: https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/main/xml/gl.xml
+[3]: https://docs.gl/
