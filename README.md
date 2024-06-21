@@ -71,7 +71,7 @@ at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the rglgen crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-Output of rglgen is explicitly exempted from being under any particular license. The license of [`gl.xml`][2] may be relevant.
+Output of rglgen is explicitly exempted from being forced into any particular license. The license of [`gl.xml`][2] may be relevant.
 
 [1]: https://wiki.libsdl.org/SDL2/SDL_GL_GetProcAddress
 [2]: https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/main/xml/gl.xml
