@@ -34,7 +34,7 @@ impl Command {
     pub fn output_imp(&self, _opts: &CmdLine, procid: u32) {
         if self.returns == "libc::c_void" {
             println!(
-                r#"    #[inline(always)] pub unsafe fn {}(&self, {}) {{ (transmute::<_, extern "C" fn({})>(self.procs[{}]))({}) }}"#,
+                r#"    #[inline(always)] pub unsafe fn {}(&self, {}) {{ unsafe {{ (transmute::<_, extern "C" fn({})>(self.procs[{}]))({}) }} }}"#,
                 if self.name.starts_with("gl") {
                     &(&self.name)[2..]
                 } else {
@@ -47,7 +47,7 @@ impl Command {
             );
         } else {
             println!(
-                r#"    #[inline(always)] pub unsafe fn {}(&self, {}) -> {} {{ (transmute::<_, extern "C" fn({}) -> {}>(self.procs[{}]))({}) }}"#,
+                r#"    #[inline(always)] pub unsafe fn {}(&self, {}) -> {} {{ unsafe {{ (transmute::<_, extern "C" fn({}) -> {}>(self.procs[{}]))({}) }} }}"#,
                 if self.name.starts_with("gl") {
                     &(&self.name)[2..]
                 } else {
